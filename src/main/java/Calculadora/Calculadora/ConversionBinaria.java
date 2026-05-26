@@ -1,3 +1,4 @@
+package Calculadora.Calculadora;
 
 public class ConversionBinaria {
 
