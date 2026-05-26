@@ -17,18 +17,17 @@ public class App extends Application {
 
 	private HBox filaBotonesConversion;
 	private TextField ingreso;
-	private TextField resultado;  //resultado
+	private TextField resultado; // resultado
 
 	private final List<String> todasLasBases = List.of("DECIMAL", "BINARIO", "OCTAL", "HEXADECIMAL");
 
 	public void start(Stage stage) throws Exception {
 
-		//Texto superior
+		// Texto superior
 		Label etiqueta = new Label("Selecciona el tipo de ingreso");
 		etiqueta.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
-
-		//Botones
+		// Botones
 		ToggleButton decimal = new ToggleButton("DECIMAL");
 		ToggleButton binario = new ToggleButton("BINARIO");
 		ToggleButton octal = new ToggleButton("OCTAL");
@@ -40,12 +39,10 @@ public class App extends Application {
 		octal.setToggleGroup(grupoIngreso);
 		hexadecimal.setToggleGroup(grupoIngreso);
 
-
-		//Fila de botones de tipo de ingreso
+		// Fila de botones de tipo de ingreso
 		HBox filaBotonesTipo = new HBox(10);
 		filaBotonesTipo.getChildren().addAll(decimal, binario, octal, hexadecimal);
 		filaBotonesTipo.setAlignment(javafx.geometry.Pos.CENTER);
-
 
 		// Recuadro de ingreso
 		ingreso = new TextField();
@@ -53,15 +50,13 @@ public class App extends Application {
 		ingreso.setAlignment(javafx.geometry.Pos.CENTER);
 		ingreso.setStyle("-fx-prompt-text-fill: rgba(0,0,0,0.4);");
 
-
-
-
 		grupoIngreso.selectedToggleProperty().addListener((obs, oldVal, newVal) -> {
-			if (newVal == null) return;
+			if (newVal == null)
+				return;
 			String baseSeleccionada = ((ToggleButton) newVal).getText();
 			actualizarPrompt(baseSeleccionada);
 			ingreso.setText("");
-			resultado.setText("");  // limpiar resultado anterior
+			resultado.setText(""); // limpiar resultado anterior
 			actualizarBotonesDestino(baseSeleccionada);
 		});
 
@@ -69,7 +64,6 @@ public class App extends Application {
 		filaBotonesConversion = new HBox(10);
 		filaBotonesConversion.setAlignment(javafx.geometry.Pos.CENTER);
 
-		
 		// Resultado
 		resultado = new TextField();
 		resultado.setPrefWidth(300);
@@ -77,7 +71,7 @@ public class App extends Application {
 		resultado.setAlignment(javafx.geometry.Pos.CENTER);
 		resultado.setStyle("-fx-background-color: #f0f0f0; -fx-text-fill: #333;");
 
-		//Ordenado de la app
+		// Ordenado de la app
 		VBox filas = new VBox(15);
 		filas.getChildren().addAll(etiqueta, filaBotonesTipo, ingreso, filaBotonesConversion, resultado);
 		filas.setAlignment(javafx.geometry.Pos.CENTER);
@@ -90,32 +84,84 @@ public class App extends Application {
 
 	private void actualizarPrompt(String base) {
 		switch (base) {
-		case "DECIMAL":
-			ingreso.setPromptText("Ingrese números enteros positivos");
-			break;
-		case "BINARIO":
-			ingreso.setPromptText("Ingrese únicamente 0 o 1");
-			break;
-		case "OCTAL":
-			ingreso.setPromptText("Ingrese únicamente dígitos 0-7");
-			break;
-		case "HEXADECIMAL":
-			ingreso.setPromptText("Ingrese 0-9, A-F (mayúsculas o minúsculas)");
-			break;
-		default:
-			ingreso.setPromptText("");
+			case "DECIMAL":
+				ingreso.setPromptText("Ingrese números enteros positivos");
+				break;
+			case "BINARIO":
+				ingreso.setPromptText("Ingrese únicamente 0 o 1");
+				break;
+			case "OCTAL":
+				ingreso.setPromptText("Ingrese únicamente dígitos 0-7");
+				break;
+			case "HEXADECIMAL":
+				ingreso.setPromptText("Ingrese 0-9, A-F (mayúsculas o minúsculas)");
+				break;
+			default:
+				ingreso.setPromptText("");
 		}
 	}
 
 	private void actualizarBotonesDestino(String baseSeleccionada) {
 		filaBotonesConversion.getChildren().clear();
-
 		List<String> otrasBases = new ArrayList<>(todasLasBases);
 		otrasBases.remove(baseSeleccionada);
 
 		for (String baseDestino : otrasBases) {
 			Button boton = new Button("Convertir a " + baseDestino);
 			boton.setPrefWidth(140);
+
+			// === CONEXIÓN DE EVENTOS DE CONVERSIÓN ===
+			boton.setOnAction(e -> {
+				String textoIngreso = ingreso.getText().trim();
+				if (textoIngreso.isEmpty()) {
+					resultado.setText("Por favor, ingrese un valor.");
+					return;
+				}
+
+				try {
+					int decimalIntermedio = 0;
+
+					// 1. Convertimos la entrada a un entero decimal común (Puente)
+					switch (baseSeleccionada) {
+						case "DECIMAL":
+							decimalIntermedio = Integer.parseInt(textoIngreso);
+							break;
+						case "OCTAL":
+							decimalIntermedio = Calculadora_Bases.convertirOctalADecimal(textoIngreso);
+							break;
+						case "BINARIO":
+							decimalIntermedio = ConversionBinaria.convertirBinarioADecimal(textoIngreso);
+							break;
+						case "HEXADECIMAL":
+							decimalIntermedio = Integer.parseInt(textoIngreso, 16);
+							break;
+					}
+
+					// 2. Convertimos ese decimal intermedio a la base de destino
+					String resultadoFinal = "";
+					switch (baseDestino) {
+						case "DECIMAL":
+							resultadoFinal = String.valueOf(decimalIntermedio);
+							break;
+						case "OCTAL":
+							resultadoFinal = Calculadora_Bases.convertirDecimalAOctal(decimalIntermedio);
+							break;
+						case "BINARIO":
+							resultadoFinal = ConversionBinaria.convertirDecimalABinario(decimalIntermedio);
+							break;
+						case "HEXADECIMAL":
+							resultadoFinal = Integer.toHexString(decimalIntermedio).toUpperCase();
+							break;
+					}
+
+					resultado.setText(resultadoFinal);
+
+				} catch (NumberFormatException ex) {
+					resultado.setText("Error: Formato de entrada inválido.");
+				}
+			});
+			// =========================================
+
 			filaBotonesConversion.getChildren().add(boton);
 		}
 	}
